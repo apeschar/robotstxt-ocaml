@@ -1,0 +1,4 @@
+(test
+ (name test_robotstxt)
+ (modes native byte_complete)
+ (libraries robotstxt))

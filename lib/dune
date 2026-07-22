@@ -1,0 +1,25 @@
+(include_subdirs unqualified)
+
+(library
+ (name robotstxt)
+ (public_name robotstxt)
+ (foreign_stubs
+  (language cxx)
+  (names ada robotstxt_stubs)
+  (flags
+   (:standard
+    -std=c++20
+    -DADA_INCLUDE_URL_PATTERN=0
+    -DROBOTS_USE_ADA=1
+    -Wall
+    -Wextra
+    -Wno-unused-parameter))
+  (include_dirs vendor))
+ (c_library_flags
+  (:standard
+   (:include cxx_link_flags.sexp))))
+
+(rule
+ (targets cxx_link_flags.sexp)
+ (action
+  (run ../config/discover.exe)))
