@@ -11,9 +11,9 @@
 
 (package
  (name robotstxt)
- (synopsis "OCaml bindings to nzrsky/robotstxt")
+ (synopsis "OCaml bindings to google/robotstxt")
  (description
-  "Dune-native OCaml bindings to the fast, RFC 9309-aware nzrsky/robotstxt C++ library.")
+  "Dune-native OCaml bindings to Google's robots.txt parser and matcher C++ library.")
  (depends
   (conf-c++ :build)
   (dune-configurator :build)

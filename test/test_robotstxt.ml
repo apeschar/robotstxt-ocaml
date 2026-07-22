@@ -9,19 +9,8 @@ let check_bool name expected actual =
 let check_int_option name expected actual =
   if expected <> actual then failf "%s: unexpected line number" name
 
-let check_float_option name expected actual =
-  match (expected, actual) with
-  | None, None -> ()
-  | Some expected, Some actual when Float.abs (expected -. actual) < 1e-9 -> ()
-  | _ -> failf "%s: unexpected float option" name
-
 let basic_robots =
-  "User-agent: *\n\
-   Disallow: /private/\n\
-   Allow: /private/public$\n\
-   Crawl-delay: 1.5\n\
-   Request-rate: 2/10\n\
-   Content-Signal: ai-train=no, ai-input=yes\n"
+  "User-agent: *\nDisallow: /private/\nAllow: /private/public$\n"
 
 let test_basic () =
   let decision =
@@ -30,17 +19,7 @@ let test_basic () =
   in
   check_bool "private URL" false decision.allowed;
   check_int_option "matching line" (Some 2) decision.matching_line;
-  check_bool "specific agent" false decision.matched_specific_agent;
-  check_float_option "crawl delay" (Some 1.5) decision.crawl_delay;
-  (match decision.request_rate with
-  | Some { requests = 2; seconds = 10 } -> ()
-  | _ -> failwith "unexpected request-rate");
-  (match decision.content_signal with
-  | Some { ai_train = Some false; ai_input = Some true; search = None } -> ()
-  | _ -> failwith "unexpected content-signal");
-  check_bool "AI training preference" false (allows_ai_train decision);
-  check_bool "AI input preference" true (allows_ai_input decision);
-  check_bool "default search preference" true (allows_search decision)
+  check_bool "specific agent" false decision.matched_specific_agent
 
 let test_allow_precedence () =
   let decision =
@@ -50,20 +29,19 @@ let test_allow_precedence () =
   check_bool "specific allow" true decision.allowed;
   check_int_option "allow line" (Some 3) decision.matching_line
 
-let test_ada_url_normalization () =
+let test_url_is_not_normalized () =
   let robots_txt = "User-agent: *\nDisallow: /private/\n" in
   let decision =
     evaluate ~robots_txt ~user_agent:"ExampleBot"
       ~url:"https://example.test/public/../private/report"
   in
-  check_bool "Ada dot-segment normalization" false decision.allowed;
-  check_int_option "normalized URL matching line" (Some 2)
-    decision.matching_line
+  check_bool "dot segments are left to the caller" true decision.allowed;
+  check_int_option "unnormalized URL matching line" None decision.matching_line
 
 let test_non_http_url () =
   let decision =
-    evaluate ~robots_txt:"User-agent: *\nAllow: /\n"
-      ~user_agent:"ExampleBot" ~url:"mailto:info@example.test"
+    evaluate ~robots_txt:"User-agent: *\nAllow: /\n" ~user_agent:"ExampleBot"
+      ~url:"mailto:info@example.test"
   in
   check_bool "non-HTTP URL" true decision.allowed
 
@@ -108,11 +86,8 @@ let test_reuse_resets_state () =
     Matcher.evaluate matcher ~robots_txt:"User-agent: *\nAllow: /\n"
       ~user_agent:"ExampleBot" ~url:"https://example.test/"
   in
-  check_float_option "reset crawl delay" None clean.crawl_delay;
-  if clean.request_rate <> None then
-    failwith "request-rate leaked between checks";
-  if clean.content_signal <> None then
-    failwith "content-signal leaked between checks"
+  check_int_option "reset matching line" (Some 2) clean.matching_line;
+  check_bool "reset agent selection" false clean.matched_specific_agent
 
 let test_empty_agents_rejected () =
   match
@@ -124,14 +99,13 @@ let test_empty_agents_rejected () =
 
 let test_utilities () =
   check_bool "valid agent" true (is_valid_user_agent "ExampleBot");
-  check_bool "invalid agent" false (is_valid_user_agent "ExampleBot/1.0");
-  check_bool "content-signal support" true content_signal_supported;
-  if version <> "1.1.0" then failf "unexpected native version: %s" version
+  check_bool "empty agent" false (is_valid_user_agent "");
+  check_bool "invalid agent" false (is_valid_user_agent "ExampleBot/1.0")
 
 let () =
   test_basic ();
   test_allow_precedence ();
-  test_ada_url_normalization ();
+  test_url_is_not_normalized ();
   test_non_http_url ();
   test_specific_agent ();
   test_multiple_agents ();
