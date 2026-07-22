@@ -3,8 +3,8 @@ opam-version: "2.0"
 synopsis: "OCaml bindings to nzrsky/robotstxt"
 description:
   "Dune-native OCaml bindings to the fast, RFC 9309-aware nzrsky/robotstxt C++ library."
-maintainer: ["robotstxt-ocaml contributors"]
-authors: ["robotstxt-ocaml contributors"]
+maintainer: ["Albert Peschar <albert@peschar.net>"]
+authors: ["Albert Peschar <albert@peschar.net>"]
 license: "Apache-2.0"
 homepage: "https://github.com/apeschar/robotstxt-ocaml"
 bug-reports: "https://github.com/apeschar/robotstxt-ocaml/issues"

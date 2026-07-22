@@ -49,6 +49,12 @@ URLs passed to the matcher must already be percent-encoded according to RFC
 
 A C++20 compiler, OCaml 4.14 or newer, and Dune 3.12 or newer are required.
 
+Once published, install the library through opam:
+
+```console
+opam install robotstxt
+```
+
 To install directly from a checkout:
 
 ```console

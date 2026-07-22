@@ -6,8 +6,8 @@
  (github apeschar/robotstxt-ocaml))
 
 (license Apache-2.0)
-(authors "robotstxt-ocaml contributors")
-(maintainers "robotstxt-ocaml contributors")
+(authors "Albert Peschar <albert@peschar.net>")
+(maintainers "Albert Peschar <albert@peschar.net>")
 
 (package
  (name robotstxt)
