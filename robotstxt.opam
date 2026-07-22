@@ -6,6 +6,8 @@ description:
 maintainer: ["robotstxt-ocaml contributors"]
 authors: ["robotstxt-ocaml contributors"]
 license: "Apache-2.0"
+homepage: "https://github.com/apeschar/robotstxt-ocaml"
+bug-reports: "https://github.com/apeschar/robotstxt-ocaml/issues"
 depends: [
   "dune" {>= "3.12"}
   "conf-c++" {build}
@@ -27,3 +29,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
+dev-repo: "git+https://github.com/apeschar/robotstxt-ocaml.git"

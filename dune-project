@@ -2,6 +2,9 @@
 (name robotstxt)
 (generate_opam_files true)
 
+(source
+ (github apeschar/robotstxt-ocaml))
+
 (license Apache-2.0)
 (authors "robotstxt-ocaml contributors")
 (maintainers "robotstxt-ocaml contributors")
