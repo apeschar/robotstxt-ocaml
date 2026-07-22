@@ -26,7 +26,7 @@ void finalize_matcher(value v_matcher) {
   wrapper->matcher = nullptr;
 }
 
-const custom_operations matcher_operations = {
+custom_operations matcher_operations = {
     "org.ocaml.robotstxt.matcher.v1",
     finalize_matcher,
     custom_compare_default,
