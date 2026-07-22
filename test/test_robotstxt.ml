@@ -60,6 +60,13 @@ let test_ada_url_normalization () =
   check_int_option "normalized URL matching line" (Some 2)
     decision.matching_line
 
+let test_non_http_url () =
+  let decision =
+    evaluate ~robots_txt:"User-agent: *\nAllow: /\n"
+      ~user_agent:"ExampleBot" ~url:"mailto:info@example.test"
+  in
+  check_bool "non-HTTP URL" true decision.allowed
+
 let test_specific_agent () =
   let robots_txt =
     "User-agent: *\nDisallow: /\n\nUser-agent: FriendlyBot\nAllow: /\n"
@@ -125,6 +132,7 @@ let () =
   test_basic ();
   test_allow_precedence ();
   test_ada_url_normalization ();
+  test_non_http_url ();
   test_specific_agent ();
   test_multiple_agents ();
   test_reuse_resets_state ();
