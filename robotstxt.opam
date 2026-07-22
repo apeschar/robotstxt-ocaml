@@ -2,7 +2,7 @@
 opam-version: "2.0"
 synopsis: "OCaml bindings to google/robotstxt"
 description:
-  "Dune-native OCaml bindings to Google's robots.txt parser and matcher C++ library."
+  "OCaml bindings to Google's robots.txt parser and matcher C++ library."
 maintainer: ["Albert Peschar <albert@peschar.net>"]
 authors: ["Albert Peschar <albert@peschar.net>"]
 license: "Apache-2.0"
