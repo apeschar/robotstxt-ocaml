@@ -28,7 +28,29 @@ let () =
 the robots file contained a group for the requested agent. Use
 `Robotstxt.Matcher` to reuse a native matcher when processing many inputs. A
 single matcher is stateful and must not be used concurrently; separate matchers
-can safely be used from separate domains.
+can safely be used from separate domains. Reusing a matcher with the text-based
+API still parses the robots.txt text for every URL.
+
+For many URLs against the same robots.txt, parse once instead:
+
+```ocaml
+let rules = Robotstxt.Parsed.create robots_txt
+let matcher = Robotstxt.Matcher.create ()
+
+let allowed url =
+  Robotstxt.Matcher.is_allowed_parsed matcher ~rules
+    ~user_agent:"ExampleBot" ~url
+```
+
+`Parsed.t` owns immutable normalized directives and can be shared across domains.
+Keep the matcher local to each domain or operation. Replace the parsed document
+when the robots.txt cache expires; ongoing users of the old document remain safe.
+The parsed API replays the upstream parser's directives through the existing
+matcher, preserving group selection, escaping, rule precedence and line numbers.
+It eliminates repeated parsing, but still matches the rules for each URL.
+
+Run `dune exec test/bench_parsed.exe` for a non-gating comparison of repeated
+text parsing and parsed-rule reuse.
 
 The `*_many` functions require at least one user-agent and raise
 `Invalid_argument` for an empty list. They accept the product tokens a crawler

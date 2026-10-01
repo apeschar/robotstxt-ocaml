@@ -37,6 +37,29 @@ custom_operations matcher_operations = {
     custom_fixed_length_default,
 };
 
+struct ocaml_robotstxt_parsed {
+  googlebot::ParsedRobots* rules;
+};
+
+#define Parsed_val(value) \
+  (reinterpret_cast<ocaml_robotstxt_parsed*>(Data_custom_val(value)))
+
+void finalize_parsed(value v_parsed) {
+  delete Parsed_val(v_parsed)->rules;
+  Parsed_val(v_parsed)->rules = nullptr;
+}
+
+custom_operations parsed_operations = {
+    "org.ocaml.robotstxt.parsed.v1",
+    finalize_parsed,
+    custom_compare_default,
+    custom_hash_default,
+    custom_serialize_default,
+    custom_deserialize_default,
+    custom_compare_ext_default,
+    custom_fixed_length_default,
+};
+
 googlebot::RobotsMatcher* unwrap_matcher(value v_matcher) {
   return Matcher_val(v_matcher)->matcher;
 }
@@ -103,6 +126,63 @@ extern "C" CAMLprim value ocaml_robotstxt_is_allowed_many(
 
     const bool allowed = unwrap_matcher(v_matcher)->AllowedByRobots(
         string_view_of_value(v_robots_txt), &agents, string_of_value(v_url));
+    CAMLreturn(Val_bool(allowed));
+  } catch (const std::bad_alloc&) {
+    caml_raise_out_of_memory();
+  } catch (...) {
+    raise_native_exception();
+  }
+}
+
+extern "C" CAMLprim value ocaml_robotstxt_parsed_create(value v_robots_txt) {
+  CAMLparam1(v_robots_txt);
+  CAMLlocal1(v_parsed);
+
+  // Estimate owned directive/string storage so the GC accounts for the native
+  // cache. Allocate the rooted wrapper first, avoiding leaks if OCaml allocation
+  // raises. The finalizer also handles a failed native construction.
+  v_parsed = caml_alloc_custom_mem(
+      &parsed_operations, sizeof(ocaml_robotstxt_parsed),
+      sizeof(googlebot::ParsedRobots) + 4 * caml_string_length(v_robots_txt));
+  Parsed_val(v_parsed)->rules = nullptr;
+  try {
+    Parsed_val(v_parsed)->rules =
+        new googlebot::ParsedRobots(string_view_of_value(v_robots_txt));
+  } catch (const std::bad_alloc&) {
+    caml_raise_out_of_memory();
+  } catch (...) {
+    raise_native_exception();
+  }
+  CAMLreturn(v_parsed);
+}
+
+extern "C" CAMLprim value ocaml_robotstxt_is_allowed_parsed(
+    value v_matcher, value v_parsed, value v_user_agent, value v_url) {
+  CAMLparam4(v_matcher, v_parsed, v_user_agent, v_url);
+  try {
+    const std::vector<std::string> agents{string_of_value(v_user_agent)};
+    const bool allowed = unwrap_matcher(v_matcher)->AllowedByParsedRobots(
+        *Parsed_val(v_parsed)->rules, &agents, string_of_value(v_url));
+    CAMLreturn(Val_bool(allowed));
+  } catch (const std::bad_alloc&) {
+    caml_raise_out_of_memory();
+  } catch (...) {
+    raise_native_exception();
+  }
+}
+
+extern "C" CAMLprim value ocaml_robotstxt_is_allowed_parsed_many(
+    value v_matcher, value v_parsed, value v_user_agents, value v_url) {
+  CAMLparam4(v_matcher, v_parsed, v_user_agents, v_url);
+  try {
+    const mlsize_t count = Wosize_val(v_user_agents);
+    std::vector<std::string> agents;
+    agents.reserve(count);
+    for (mlsize_t i = 0; i < count; ++i) {
+      agents.push_back(string_of_value(Field(v_user_agents, i)));
+    }
+    const bool allowed = unwrap_matcher(v_matcher)->AllowedByParsedRobots(
+        *Parsed_val(v_parsed)->rules, &agents, string_of_value(v_url));
     CAMLreturn(Val_bool(allowed));
   } catch (const std::bad_alloc&) {
     caml_raise_out_of_memory();

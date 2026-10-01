@@ -8,6 +8,15 @@ type decision = {
 }
 (** The result of matching one URL. Line numbers are one-based. *)
 
+module Parsed : sig
+  type t
+  (** Immutable parsed rules, safe to share between domains. Owns its directive
+      strings independently of the input. *)
+
+  val create : string -> t
+  (** Parse robots.txt once using the upstream parser. *)
+end
+
 module Matcher : sig
   type t
   (** A reusable native matcher. A value may be reused sequentially, but must
@@ -32,6 +41,23 @@ module Matcher : sig
 
   val is_allowed_many :
     t -> robots_txt:string -> user_agents:string list -> url:string -> bool
+  (** Raises [Invalid_argument] if [user_agents] is empty. *)
+
+  val evaluate_parsed :
+    t -> rules:Parsed.t -> user_agent:string -> url:string -> decision
+  (** Match a URL without reparsing robots.txt. Same semantics as [evaluate]. *)
+
+  val evaluate_parsed_many :
+    t -> rules:Parsed.t -> user_agents:string list -> url:string -> decision
+  (** As [evaluate_many], without reparsing. Raises [Invalid_argument] if
+      [user_agents] is empty. *)
+
+  val is_allowed_parsed :
+    t -> rules:Parsed.t -> user_agent:string -> url:string -> bool
+  (** Lower-allocation equivalent of [evaluate_parsed]. *)
+
+  val is_allowed_parsed_many :
+    t -> rules:Parsed.t -> user_agents:string list -> url:string -> bool
   (** Raises [Invalid_argument] if [user_agents] is empty. *)
 end
 

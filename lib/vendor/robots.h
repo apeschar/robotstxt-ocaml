@@ -109,6 +109,33 @@ class RobotsParseHandler {
 void ParseRobotsTxt(absl::string_view robots_body,
                     RobotsParseHandler* parse_callback);
 
+// Local extension: an immutable, owning snapshot of the upstream parser's
+// normalized directives. Replay preserves their order and original line numbers.
+// Safe to share between threads; each thread must use its own RobotsMatcher.
+class ParsedRobots : private RobotsParseHandler {
+ public:
+  explicit ParsedRobots(absl::string_view robots_body);
+  void Replay(RobotsParseHandler* handler) const;
+
+ private:
+  struct Directive {
+    KeyType type;
+    int line;
+    std::string value;
+    std::string action;
+  };
+  std::vector<Directive> directives_;
+
+  void HandleRobotsStart() override {}
+  void HandleRobotsEnd() override {}
+  void HandleUserAgent(int line, absl::string_view value) override;
+  void HandleAllow(int line, absl::string_view value) override;
+  void HandleDisallow(int line, absl::string_view value) override;
+  void HandleSitemap(int line, absl::string_view value) override;
+  void HandleUnknownAction(int line, absl::string_view action,
+                           absl::string_view value) override;
+};
+
 // RobotsMatcher - matches robots.txt against URLs.
 //
 // The Matcher uses a default match strategy for Allow/Disallow patterns which
@@ -154,6 +181,11 @@ class RobotsMatcher : protected RobotsParseHandler {
   bool AllowedByRobots(absl::string_view robots_body,
                        const std::vector<std::string>* user_agents,
                        const std::string& url);
+
+  // Local extension: identical matching semantics without reparsing the text.
+  bool AllowedByParsedRobots(const ParsedRobots& robots,
+                             const std::vector<std::string>* user_agents,
+                             const std::string& url);
 
   // Do robots check for 'url' when there is only one user agent. 'url' must
   // be %-encoded according to RFC3986.

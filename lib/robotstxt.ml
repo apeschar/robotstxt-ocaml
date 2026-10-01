@@ -7,6 +7,12 @@ type decision = {
 external is_valid_user_agent : string -> bool
   = "ocaml_robotstxt_is_valid_user_agent"
 
+module Parsed = struct
+  type t
+
+  external create : string -> t = "ocaml_robotstxt_parsed_create"
+end
+
 module Matcher = struct
   type t
 
@@ -17,6 +23,13 @@ module Matcher = struct
 
   external is_allowed_many_raw : t -> string -> string array -> string -> bool
     = "ocaml_robotstxt_is_allowed_many"
+
+  external is_allowed_parsed_raw : t -> Parsed.t -> string -> string -> bool
+    = "ocaml_robotstxt_is_allowed_parsed"
+
+  external is_allowed_parsed_many_raw :
+    t -> Parsed.t -> string array -> string -> bool
+    = "ocaml_robotstxt_is_allowed_parsed_many"
 
   external matching_line_raw : t -> int = "ocaml_robotstxt_matching_line"
 
@@ -30,6 +43,14 @@ module Matcher = struct
     match user_agents with
     | [] -> invalid_arg "Robotstxt: user_agents must not be empty"
     | _ -> is_allowed_many_raw t robots_txt (Array.of_list user_agents) url
+
+  let is_allowed_parsed t ~rules ~user_agent ~url =
+    is_allowed_parsed_raw t rules user_agent url
+
+  let is_allowed_parsed_many t ~rules ~user_agents ~url =
+    match user_agents with
+    | [] -> invalid_arg "Robotstxt: user_agents must not be empty"
+    | _ -> is_allowed_parsed_many_raw t rules (Array.of_list user_agents) url
 
   let snapshot t allowed =
     let matching_line =
@@ -47,6 +68,14 @@ module Matcher = struct
 
   let evaluate_many t ~robots_txt ~user_agents ~url =
     let allowed = is_allowed_many t ~robots_txt ~user_agents ~url in
+    snapshot t allowed
+
+  let evaluate_parsed t ~rules ~user_agent ~url =
+    let allowed = is_allowed_parsed t ~rules ~user_agent ~url in
+    snapshot t allowed
+
+  let evaluate_parsed_many t ~rules ~user_agents ~url =
+    let allowed = is_allowed_parsed_many t ~rules ~user_agents ~url in
     snapshot t allowed
 end
 

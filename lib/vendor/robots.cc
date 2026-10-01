@@ -507,6 +507,59 @@ void ParseRobotsTxt(absl::string_view robots_body,
   parser.Parse();
 }
 
+// Local extension: record the existing parser's output, rather than implementing
+// another parser or preselecting user-agent groups.
+ParsedRobots::ParsedRobots(absl::string_view robots_body) {
+  ParseRobotsTxt(robots_body, this);
+}
+
+void ParsedRobots::HandleUserAgent(int line, absl::string_view value) {
+  directives_.push_back({KeyType::USER_AGENT, line, std::string(value), {}});
+}
+
+void ParsedRobots::HandleAllow(int line, absl::string_view value) {
+  directives_.push_back({KeyType::ALLOW, line, std::string(value), {}});
+}
+
+void ParsedRobots::HandleDisallow(int line, absl::string_view value) {
+  directives_.push_back({KeyType::DISALLOW, line, std::string(value), {}});
+}
+
+void ParsedRobots::HandleSitemap(int line, absl::string_view value) {
+  directives_.push_back({KeyType::SITEMAP, line, std::string(value), {}});
+}
+
+void ParsedRobots::HandleUnknownAction(int line, absl::string_view action,
+                                       absl::string_view value) {
+  directives_.push_back(
+      {KeyType::UNKNOWN, line, std::string(value), std::string(action)});
+}
+
+void ParsedRobots::Replay(RobotsParseHandler* handler) const {
+  handler->HandleRobotsStart();
+  for (const auto& directive : directives_) {
+    switch (directive.type) {
+      case KeyType::USER_AGENT:
+        handler->HandleUserAgent(directive.line, directive.value);
+        break;
+      case KeyType::ALLOW:
+        handler->HandleAllow(directive.line, directive.value);
+        break;
+      case KeyType::DISALLOW:
+        handler->HandleDisallow(directive.line, directive.value);
+        break;
+      case KeyType::SITEMAP:
+        handler->HandleSitemap(directive.line, directive.value);
+        break;
+      case KeyType::UNKNOWN:
+        handler->HandleUnknownAction(directive.line, directive.action,
+                                     directive.value);
+        break;
+    }
+  }
+  handler->HandleRobotsEnd();
+}
+
 RobotsMatcher::RobotsMatcher()
     : seen_global_agent_(false),
       seen_specific_agent_(false),
@@ -542,6 +595,15 @@ bool RobotsMatcher::AllowedByRobots(absl::string_view robots_body,
   std::string path = GetPathParamsQuery(url);
   InitUserAgentsAndPath(user_agents, path.c_str());
   ParseRobotsTxt(robots_body, this);
+  return !disallow();
+}
+
+bool RobotsMatcher::AllowedByParsedRobots(
+    const ParsedRobots& robots, const std::vector<std::string>* user_agents,
+    const std::string& url) {
+  std::string path = GetPathParamsQuery(url);
+  InitUserAgentsAndPath(user_agents, path.c_str());
+  robots.Replay(this);
   return !disallow();
 }
 
